@@ -16,5 +16,10 @@ __pycache__/
 # Logs
 *.log
 
-# Node.js
+# Node/JS
 node_modules/
+**/node_modules/
+.next/
+dist/
+build/
+
