@@ -46,3 +46,4 @@ def upsert_availabilities():
                      datetime.fromisoformat(it["end"]),
                      it["status"]))
     return {"ok": True}, 201
+
