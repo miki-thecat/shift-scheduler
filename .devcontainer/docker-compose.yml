@@ -8,7 +8,7 @@ services:
       MYSQL_PASSWORD: pass
       MYSQL_ROOT_PASSWORD: root
     ports:
-      - "3306:3306" # ローカルからGUIで見たい場合
+      - "3306:3306"
     volumes:
       - db_data:/var/lib/mysql
     healthcheck:
@@ -19,12 +19,10 @@ services:
 
   api:
     build:
-      context: ../shift-api
+      context: ../shift-api # ← .devcontainer から見た相対パス
       dockerfile: Dockerfile
     container_name: shift_api
     command: bash -lc "flask run --host=0.0.0.0 --port 8000"
-    env_file:
-      - ../.env # ローカル用の環境変数
     environment:
       FLASK_APP: app.py
       FLASK_DEBUG: "1"
@@ -46,8 +44,6 @@ services:
       dockerfile: Dockerfile
     container_name: shift_web
     command: bash -lc "npm run dev -- -p 3000"
-    env_file:
-      - ../.env
     environment:
       NEXT_PUBLIC_API_BASE: "http://localhost:8000"
     ports:
@@ -56,7 +52,8 @@ services:
       - ../shift-web:/workspace:cached
       - /workspace/node_modules
     depends_on:
-      - api
+      api:
+        condition: service_started
 
 volumes:
   db_data:
