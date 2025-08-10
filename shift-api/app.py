@@ -2,6 +2,7 @@ import os
 from datetime import datetime
 from flask import Flask, request
 from flask_cors import CORS
+import pymysql as mysql
 
 # MySQLドライバ: mysqlclient(=MySQLdb) が無い環境の保険に PyMySQL へ自動フォールバック
 try:
