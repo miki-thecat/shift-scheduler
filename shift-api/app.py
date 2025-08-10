@@ -16,4 +16,6 @@ DB = MySQLdb.connect(
     autocommit=True
 )
 
+@app.route("/api/health", methods=["GET"])
+
 
