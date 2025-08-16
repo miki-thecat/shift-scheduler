@@ -1,6 +1,6 @@
-シフト調整アプリ（店長向け × スマホ提出 × AI割当）
+## シフト調整アプリ（店長向け × スマホ提出 × AI割当）
 
-店長の「毎月のシフト作り」を効率化するための Web アプリ。
+店長の「毎月のシフト作り」を効率化する Web アプリ。
 スマホ（iOS/Android）＋LINE ログインでメンバーがまとめて希望提出、店長は締切管理 → AI 自動調整 → Excel 出力まで実行できます。
 
 目次
@@ -11,11 +11,13 @@
 
 画面イメージ
 
+Excel の例（列＝日付、行＝人）
+
 アーキテクチャ
 
 ディレクトリ構成
 
-セットアップ & 起動
+セットアップ--起動
 
 API 仕様（実装済み）
 
@@ -41,7 +43,7 @@ Excel 出力
 
 スロット：当面は固定テンプレ（例：9–13 / 13–18 / 18–22）
 
-Excel レイアウト：行＝日付、列＝人（店長の運用に合わせる）
+Excel レイアウト：列＝日付、行＝人（横に日付／縦に人）
 
 AI ロジック：MVP は 貪欲 + 調整（将来 OR-Tools 等で高度化）
 
@@ -53,31 +55,22 @@ AI ロジック：MVP は 貪欲 + 調整（将来 OR-Tools 等で高度化）
 
 他メンバーの希望を閲覧（個人名＋ステータス）
 
-締切後、店長がAI 自動調整→ 手動微調整 → Excel 出力
+締切後、店長がAI 自動調整 → 手動微調整 → Excel 出力
 
 画面イメージ
 
-メンバー（スマホ）
+メンバー（スマホ）：まとめ入力フォーム（日付・開始・終了・希望度）／他メンバーの希望一覧（個人名＋ステータス）
 
-まとめ入力フォーム（日付・開始・終了・希望度）
+店長（PC）：期間作成・締切設定・スロット必要人数設定／希望集計ダッシュボード／AI 割当・微調整／Excel 出力
 
-他メンバーの希望一覧（個人名＋ステータス）
+Excel の例（列＝日付、行＝人）
 
-店長（PC）
+横に日付／縦に人の例です。
 
-期間作成・締切設定・スロット必要人数設定
-
-希望集計ダッシュボード
-
-AI 割当／微調整
-
-Excel 出力
-
-Excel の例（行＝日付、列＝人）：
-
-日付＼人	Aさん	Bさん	Cさん
-1日	○	×	○
-2日	×	○	△
+人＼日付	1日	2日	3日	4日	5日
+Aさん	○	×	○		△
+Bさん	×	○	△	○	
+Cさん	○	△	×	○	○
 アーキテクチャ
 
 Frontend：Next.js（App Router, TypeScript 推奨 / 現状 JS でも可）
@@ -111,7 +104,7 @@ shift/
       └─ availability/
          └─ page.(tsx|jsx)     # まとめ入力フォーム
 
-セットアップ & 起動
+セットアップ--起動
 1) Docker で起動
 cd ./.devcontainer
 docker compose build --no-cache
@@ -264,7 +257,9 @@ AI 割当（MVP 方針）
 
 Excel 出力
 
-レイアウト：行＝日付、列＝人。セルは割当（○/×/△ 等）やメモ記号
+レイアウト：列＝日付、行＝人（横に日付／縦に人）
+
+セル：割当（○/×/△ 等）やメモ記号
 
 ヘッダ：必要人数、充足率、注意事項欄
 
@@ -292,3 +287,46 @@ docker compose ps
 docker compose logs -f api
 docker compose logs -f web
 docker compose logs -f db
+
+# API ヘルス
+curl http://localhost:8000/health
+
+# DB クエリ
+docker compose exec db mysql -uuser -ppass app -e "SHOW TABLES;"
+docker compose exec db mysql -uuser -ppass app -e "SELECT * FROM availabilities ORDER BY id DESC LIMIT 5;"
+
+トラブルシューティング
+
+URL をターミナルに打ってしまう → ブラウザのアドレスバーに http://localhost:3000/availability を入力
+
+CORS エラー → 開発中は CORS(app, resources={r"/api/*": {"origins": "*"}}) を維持（本番はドメイン限定）
+
+mysqlclient ビルド失敗 → 開発は PyMySQL を利用（requirements.txt に PyMySQL）。mysqlclient を使う場合は pkg-config / build-essential を追加
+
+VS Code の赤線（Pylance） → Dev Container 内の Python を選択（/usr/local/bin/python）
+
+ロードマップ
+
+フェーズ1（MVP）
+
+まとめ入力（現フォーム）／締切前の再編集
+
+他メンバーの希望一覧（個人名あり）
+
+店長：期間作成・固定スロットの必要人数設定
+
+簡易 AI 割当（貪欲＋調整）
+
+Excel 出力（列＝日付、行＝人）
+
+フェーズ2（改善）
+
+LINE ログイン／締切・確定通知
+
+店長 UI（ドラッグ＆ドロップ微調整）
+
+スロット柔軟化・スキル要件
+
+OR-Tools 導入・制約最適化
+
+監査ログ、権限強化、バックアップ方針
