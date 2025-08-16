@@ -77,10 +77,6 @@ Client(スマホ/PC)
 └─ REST → Flask API (api:8000)
 └─ SQL → MySQL (db:3306)
 
-yaml
-コピーする
-編集する
-
 ---
 
 ## ディレクトリ構成
@@ -99,20 +95,12 @@ shift/
 └─ availability/
 └─ page.(tsx|jsx) # まとめ入力フォーム
 
-yaml
-コピーする
-編集する
-
----
-
-## セットアップ--起動
-
-### 1) Docker で起動
 ```bash
 cd ./.devcontainer
 docker compose build --no-cache
 docker compose up -d
 docker compose ps
+
 2) 初回のみ: DB テーブル作成
 bash
 コピーする
@@ -158,9 +146,6 @@ POST /api/availabilities
 
 Request (JSON)
 
-json
-コピーする
-編集する
 {
   "line_user_id": "dev-user",
   "items": [
@@ -173,10 +158,6 @@ json
   ]
 }
 Response
-
-arduino
-コピーする
-編集する
 201 Created
 { "ok": true }
 ※ DB 側に UNIQUE KEY (user_id, start_dt, end_dt) を設定しているため、同じ枠は更新に切り替わります。
@@ -186,9 +167,6 @@ GET /api/availabilities?limit=20
 
 Response (例)
 
-json
-コピーする
-編集する
 [
   {
     "id": 9,
@@ -209,9 +187,7 @@ availabilities: id, user_id, date, start_dt, end_dt, status(enum), note, created
 UNIQUE: (user_id, start_dt, end_dt)（UPSERT 用）
 
 追加予定（店長機能・AI 割当に必要）
-sql
-コピーする
-編集する
+
 CREATE TABLE periods (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
   year INT NOT NULL, month INT NOT NULL,
@@ -283,9 +259,6 @@ LIFF（LINE ログイン）で line_user_id を取得し users に紐付け
 全員: 他メンバーの希望閲覧（個人名ありの方針）
 
 コマンド集
-bash
-コピーする
-編集する
 # 起動／停止
 docker compose up -d
 docker compose down
