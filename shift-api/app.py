@@ -13,14 +13,16 @@ except ModuleNotFoundError:
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-DB = mysql.connect(
-    host=os.getenv("DB_HOST", "db"),
-    user=os.getenv("DB_USER", "user"),
-    passwd=os.getenv("DB_PASS", "pass"),
-    db=os.getenv("DB_NAME", "app"),
-    charset="utf8mb4",
-    autocommit=True,
-)
+def get_db():
+    # 必要なときに都度コネクションを開く（接続切れ対策にもなる）
+    return mysql.connect(
+        host=os.getenv("DB_HOST", "db"),
+        user=os.getenv("DB_USER", "user"),
+        passwd=os.getenv("DB_PASS", "pass"),
+        db=os.getenv("DB_NAME", "app"),
+        charset="utf8mb4",
+        autocommit=True,
+    )
 
 @app.get("/health")
 def health():
