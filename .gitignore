@@ -1,0 +1,25 @@
+# Node/Next.js
+shift-web/node_modules/
+shift-web/.next/
+shift-web/out/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+
+# Node/JS
+node_modules/
+**/node_modules/
+.next/
+dist/
+build/
+
