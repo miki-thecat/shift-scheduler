@@ -1,30 +1,64 @@
-import os
-from datetime import datetime
-from flask import Flask, request
+import os, io
+from datetime import datetime, date, time, timedelta
+from dateutil.relativedelta import relativedelta
+from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
-import pymysql as mysql
+import pymysql
 
-# MySQLドライバ: mysqlclient(=MySQLdb) が無い環境の保険に PyMySQL へ自動フォールバック
-try:
-    import MySQLdb as mysql
-except ModuleNotFoundError:
-    import pymysql as mysql
+DB_HOST = os.getenv("DB_HOST", "db")
+DB_USER = os.getenv("DB_USER", "user")
+DB_PASS = os.getenv("DB_PASS", "pass")
+DB_NAME = os.getenv("DB_NAME", "app")
+
+def db():
+    return pymysql.connect(
+        host=DB_HOST, user=DB_USER, password=DB_PASS, database=DB_NAME,
+        charset="utf8mb4", autocommit=True,
+        cursorclass=pymysql.cursors.DictCursor
+    )
+
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-DB = mysql.connect(
-    host=os.getenv("DB_HOST", "db"),
-    user=os.getenv("DB_USER", "user"),
-    passwd=os.getenv("DB_PASS", "pass"),
-    db=os.getenv("DB_NAME", "app"),
-    charset="utf8mb4",
-    autocommit=True,
-)
 
+# --utils--
+def month_range(yyyy_mm: str):
+    first = datetime.strptime(yyyy_mm + "-01", "%Y-%m-%d").date()
+    last = (first + relativedelta(months=1)) - timedelta(days=1)
+    return first, last
+
+def ensure_tables():
+    pass
+
+#---health---
 @app.get("/health")
 def health():
     return {"ok": True}
+
+# ---periods---
+@app.post("/api/periods")
+def create_period():
+     """body: { "month": "2025-08", "name": "2025年8月", "deadline": "2025-08-25" }"""
+     body = request.get_json(force=True)
+     month = body["month"]
+     name = body.get["name"] or month
+     deadline = body.get("deadline")
+     with db() as conn, conn.cursor() as cur:
+         cur.execute("""INSERT INTO periods(name, month, deadline)
+                        values(%s, %s, %s) on DUPLICATE ley update name=values(name), deadline=values)"""
+                     (name, month, deadline))
+         cur.execute("select * from periods where month = %s", (month,))
+         row = cur.fetchone()
+         return jsonify({"ok": True, "periods": row}), 201
+
+@app.get("/api/periods")
+def list_periods():
+    with db() as conn, conn.cursor() as cur:
+        cur.execute("select * from periods order by month desc")
+        rows = cur.fetchone()
+    return jsonify({"ok": True, "items": rows})
+
 
 @app.post("/api/availabilities")
 def upsert_availabilities():
