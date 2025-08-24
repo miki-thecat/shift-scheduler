@@ -27,8 +27,68 @@ def month_range(yyyy_mm: str):
     return first, last
 
 def ensure_tables():
-    # 空実装：テーブルはSQLで作成する運用（README準拠）
-    pass
+    ddl = """
+    CREATE TABLE IF NOT EXISTS users (
+      id BIGINT PRIMARY KEY AUTO_INCREMENT,
+      name VARCHAR(100) NOT NULL,
+      email VARCHAR(255),
+      line_user_id VARCHAR(64) UNIQUE,
+      role ENUM('manager','crew') DEFAULT 'crew',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE TABLE IF NOT EXISTS periods (
+      id BIGINT PRIMARY KEY AUTO_INCREMENT,
+      name VARCHAR(100),
+      month CHAR(7) NOT NULL,
+      deadline DATE,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY uniq_month (month)
+    );
+    CREATE TABLE IF NOT EXISTS period_notes (
+      id BIGINT PRIMARY KEY AUTO_INCREMENT,
+      period_id BIGINT NOT NULL,
+      user_id BIGINT,
+      note VARCHAR(255),
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      INDEX(period_id), INDEX(user_id)
+    );
+    CREATE TABLE IF NOT EXISTS availabilities (
+      id BIGINT PRIMARY KEY AUTO_INCREMENT,
+      user_id BIGINT NOT NULL,
+      date DATE NOT NULL,
+      start_time TIME NOT NULL,
+      end_time TIME NOT NULL,
+      status ENUM('prefer','can','cannot') NOT NULL DEFAULT 'can',
+      note VARCHAR(255),
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY uniq_user_slot (user_id, date, start_time, end_time),
+      INDEX(user_id), INDEX(date)
+    );
+    CREATE TABLE IF NOT EXISTS slots (
+      id BIGINT PRIMARY KEY AUTO_INCREMENT,
+      period_id BIGINT NOT NULL,
+      date DATE NOT NULL,
+      start_time TIME NOT NULL,
+      end_time TIME NOT NULL,
+      needed_count INT NOT NULL DEFAULT 1,
+      UNIQUE KEY uniq_slot (period_id, date, start_time, end_time),
+      INDEX(period_id), INDEX(date)
+    );
+    CREATE TABLE IF NOT EXISTS assignments (
+      id BIGINT PRIMARY KEY AUTO_INCREMENT,
+      slot_id BIGINT NOT NULL,
+      user_id BIGINT NOT NULL,
+      assigned_by ENUM('ai','manual') DEFAULT 'ai',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY uniq_slot_user (slot_id, user_id),
+      INDEX(user_id), INDEX(slot_id)
+    );
+    """
+    with db() as conn, conn.cursor() as cur:
+        for stmt in ddl.split(";"):
+            s = stmt.strip()
+            if s: cur.execute(s)
+
 
 # ---------- health ----------
 @app.get("/health")
@@ -372,7 +432,7 @@ def export_excel():
     ws.write(2, 0, "充足率", bold)
 
     for c, day in enumerate(days, start=1):
-        ws.write(0, c, day.strftime("%-m/%-d") if hasattr(day, "strftime") else day.strftime("%m/%d"), bold)
+        ws.write(0, c, day.strftime("%m/%d"), bold)
         need = needs.get(day, 0)
         fill = fills.get(day, 0)
         rate = (fill/need) if need else 0

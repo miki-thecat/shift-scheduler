@@ -1,59 +1,53 @@
+version: "3.9"
 services:
   db:
     image: mysql:8.0
-    container_name: shift_db
+    command: [
+      "--character-set-server=utf8mb4",
+      "--collation-server=utf8mb4_0900_ai_ci"
+    ]
     environment:
+      MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: app
       MYSQL_USER: user
       MYSQL_PASSWORD: pass
-      MYSQL_ROOT_PASSWORD: root
+      TZ: Asia/Tokyo
     ports:
       - "3306:3306"
     volumes:
       - db_data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uuser", "-ppass"]
-      interval: 5s
-      timeout: 3s
-      retries: 20
 
   api:
     build:
-      context: ../shift-api # ← .devcontainer から見た相対パス
-      dockerfile: Dockerfile
-    container_name: shift_api
-    command: bash -lc "flask run --host=0.0.0.0 --port 8000"
+      context: ../shift-api
     environment:
-      FLASK_APP: app.py
-      FLASK_DEBUG: "1"
       DB_HOST: db
       DB_USER: user
       DB_PASS: pass
       DB_NAME: app
+      TZ: Asia/Tokyo
+    depends_on:
+      - db
     ports:
       - "8000:8000"
-    volumes:
-      - ../shift-api:/workspace:cached
-    depends_on:
-      db:
-        condition: service_healthy
 
   web:
     build:
       context: ../shift-web
-      dockerfile: Dockerfile
-    container_name: shift_web
-    command: bash -lc "npm run dev -- -p 3000"
+    working_dir: /workspace
     environment:
       NEXT_PUBLIC_API_BASE: "http://localhost:8000"
     ports:
       - "3000:3000"
     volumes:
-      - ../shift-web:/workspace:cached
-      - /workspace/node_modules
+      - ../shift-web:/workspace
+      - web_node_modules:/workspace/node_modules
+      - web_next:/workspace/.next
+    command: sh -c "npm install && npm run dev -- --hostname 0.0.0.0"
     depends_on:
-      api:
-        condition: service_started
+      - api
 
 volumes:
   db_data:
+  web_node_modules:
+  web_next:
